@@ -36,9 +36,11 @@ object DalvikPlugin extends sbt.Plugin {
     val androidRoot = SettingKey[File]("android-root", "root folder of the compiled android source")
 
   }
+  import DalvikKeys._
+  import DalvikPlugin._
 
   def dalvikSettings: Seq[Setting[_]] = Seq(
-    environment in dalvik := Seq(
+    environment in Dalvik := Seq(
       "ANDROID_PRINTF_LOG" -> "tag",
       "ANDROID_LOG_TAGS" -> "*:i",
       "ANDROID_DATA" -> "/tmp/test/android-data",
@@ -46,8 +48,11 @@ object DalvikPlugin extends sbt.Plugin {
       "LD_LIBRARY_PATH" -> "/var/android/lib",
       "DYLD_LIBRARY_PATH" -> "/var/android/lib"
     ),
+    dexDirectory <<= cacheDirectory(_ / "dex"),
+    runner in(Dalvik, run) := new DalvikRunner,
+    run <<= runInputTask(Dalvik, "", ""),
     fullClasspath in (Dalvik) <<= (fullClasspath in Runtime, dexDirectory, streams) map {
-      (cp: Classpath, cache: File, s: Stream) => {
+      (cp: Classpath, cache: File, s: TaskStreams) => {
         cp.filterNot((b: Attributed[File]) => b.data.toString.contains("android"))
         cp.map((a: Attributed[File]) => dex(a.data, cache)(s.log)).flatten
       }
@@ -88,7 +93,7 @@ object DalvikPlugin extends sbt.Plugin {
 }
 
 
-class DalvikRunner(dalvikVM: File) extends sbt.ScalaRun {
+class DalvikRunner extends sbt.ScalaRun {
 
   override def run(mainClass: String, classpath: Seq[File], options: Seq[String], log: sbt.Logger) = {
     log.info("this" + mainClass)
