@@ -1,0 +1,2 @@
+# run helloworld on dalvikvm
+> dalvik:run
