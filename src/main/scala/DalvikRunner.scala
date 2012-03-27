@@ -36,6 +36,7 @@ object DalvikPlugin extends sbt.Plugin {
     val androidRoot = SettingKey[File]("android-root", "root folder of the compiled android source")
 
   }
+
   import DalvikKeys._
   import DalvikPlugin._
 
@@ -60,18 +61,28 @@ object DalvikPlugin extends sbt.Plugin {
   )
 
 
-  def dex(file: File, to: File)(s: sbt.Logger): Classpath = {
-    to.mkdirs()
-    s.info("dexing %s to %s" format(file.getName, to.getPath))
-    "dx --dex --output=%s/%s %s".format(to.getAbsolutePath, file.getName + ".dex", file.getAbsolutePath).! match {
-      case 0 => s.info("%s dexed correctly" format (file.getName + ".dex"))
-      case 2 => {
-        s.warn("Failure to dex %s, will try to split into smaller jars" format file)
-        split(file, to)(s) foreach (dex(_, to)(s));
+  type Folder = File;
+
+  def dex(jar: File, to: Folder)(s: sbt.Logger): Classpath = {
+    val outputFolder = new File(to, jar.getName)
+    if (outputFolder.exists()) {
+      if (jar.lastModified() < outputFolder.lastModified()) {
+        s.info("%s already dexed" format jar.getName)
       }
-      case _ => s.error("a fatal error occured")
+    } else {
+      outputFolder.mkdirs
+      s.info("dexing %s to %s" format(jar.getName, outputFolder.getPath + "/" + jar.getName + ".dex"))
+
+      "dx --dex --output=%s/%s %s".format(outputFolder.getAbsolutePath, jar.getName + ".dex", jar.getAbsolutePath).! match {
+        case 0 => s.info("%s dexed correctly" format (jar.getName + ".dex"))
+        case 2 => {
+          s.warn("Failure to dex %s, will try to split into smaller jars" format jar)
+          split(jar, outputFolder)(s) foreach (dex(_, outputFolder)(s));
+        }
+        case _ => s.error("a fatal error occured")
+      }
     }
-    dexFiles(to)
+    dexFiles(outputFolder)
   }
 
   def split(jar: File, to: File)(logger: sbt.Logger): Seq[File] = {
