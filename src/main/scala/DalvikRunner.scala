@@ -28,8 +28,9 @@ object DalvikPlugin extends sbt.Plugin {
   object DalvikKeys {
     val androidSource = SettingKey[File]("android-source", "root directory pointing to the source for Android")
     val dexDirectory = SettingKey[File]("dex-directory", "location of dex files")
+    val bootclasspath = SettingKey[Seq[File]]("bootclasspath", "dex bootclasspath")
 
-    val dalvikVM = SettingKey[File]("dalvik-VM", "location of the dalvik vm")
+    val dalvikvm = SettingKey[File]("dalvikvm", "location of the dalvik vm")
     val environment = SettingKey[Seq[(String, String)]]("environment", "env variables for dalvikvm")
     val lib = SettingKey[File]("lib", "compiled so library folder")
     val androidData = SettingKey[File]("android-data", "location of android data where cache dex will be saved")
@@ -38,9 +39,16 @@ object DalvikPlugin extends sbt.Plugin {
   }
 
   import DalvikKeys._
-  import DalvikPlugin._
 
-  def dalvikSettings: Seq[Setting[_]] = Seq(
+  def dalvikSettings: Seq[Setting[_]] = inConfig(Dalvik) Seq(
+
+    dalvikvm <<= androidSource(_ / "out/host/linux-x86/bin/dalvikvm"),
+
+    bootclasspath <<= androidSource(bootjars(_).get),
+
+    androidRoot <<= androidSource(_ / "out/host/linux-x86/"),
+    lib <<= androidSrouce(_ / "out/target/product/generic_x86/system/lib/"),
+    androidData <<= cacheDirectory(_ / "android-data" / "dalvik-cache"),
     environment in Dalvik := Seq(
       "ANDROID_PRINTF_LOG" -> "tag",
       "ANDROID_LOG_TAGS" -> "*:i",
@@ -58,8 +66,9 @@ object DalvikPlugin extends sbt.Plugin {
         cp.map((a: Attributed[File]) => dex(a.data, cache)(s.log)).flatten
       }
     }
-  )
+    )
 
+  def bootjars(base: File): PathFinder = (base / "out/target/product/generic_x86/dex_bootjars/system/framework/") ** "*.jar"
 
   type Folder = File;
 

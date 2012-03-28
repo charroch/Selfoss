@@ -1,3 +1,2 @@
 # run helloworld on dalvikvm
 > dalvik:run
-$ exists target/foo.jar
