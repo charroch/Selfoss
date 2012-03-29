@@ -8,35 +8,16 @@ object DalvikPlugin extends sbt.Plugin {
 
   val Dalvik = config("dalvik") extend (Runtime)
 
-  /*
-    lazy val root = Project(id = "hello",
-    base = file("."),
-    settings = Project.defaultSettings ++ Seq(
-      dexDirectory <<= cacheDirectory(_ / "dex"),
-      runner in(Dalvik, run) := new DalvikRunner,
-      run <<= runInputTask(Dalvik, "", ""),
-
-      fullClasspath in (Dalvik) <<= (fullClasspath in Runtime, dexDirectory, streams) map {
-        (cp: Classpath, cache, s) => {
-          cp.filterNot((b: Attributed[File]) => b.data.toString.contains("android"))
-          cp.map((a: Attributed[File]) => dex(a.data, cache)(s.log)).flatten
-        }
-      }
-    )
-  )
-   */
   object DalvikKeys {
-    val androidSource = SettingKey[File]("android-source", "root directory pointing to the source for Android")
-    val dexDirectory = SettingKey[File]("dex-directory", "location of dex files")
-    val bootclasspath = SettingKey[Seq[File]]("bootclasspath", "dex bootclasspath")
-
-    val dalvikvm = SettingKey[File]("dalvikvm", "location of the dalvik vm")
-    val environment = SettingKey[Seq[(String, String)]]("environment", "env variables for dalvikvm")
-    val lib = SettingKey[File]("lib", "compiled so library folder")
-    val androidData = SettingKey[File]("android-data", "location of android data where cache dex will be saved")
-    val androidRoot = SettingKey[File]("android-root", "root folder of the compiled android source")
-    val options = SettingKey[Seq[String]]("options", "Options for dalvikvm")
-
+    val androidSource   = SettingKey[File]("android-source", "root directory pointing to the source for Android")
+    val dexDirectory    = SettingKey[File]("dex-directory", "location of dex files")
+    val bootclasspath   = SettingKey[Seq[File]]("bootclasspath", "dex bootclasspath")
+    val dalvikvm        = SettingKey[File]("dalvikvm", "location of the dalvik vm")
+    val environment     = SettingKey[Seq[(String, String)]]("environment", "env variables for dalvikvm")
+    val lib             = SettingKey[File]("lib", "compiled so library folder")
+    val androidData     = SettingKey[File]("android-data", "location of android data where cache dex will be saved")
+    val androidRoot     = SettingKey[File]("android-root", "root folder of the compiled android source")
+    val options         = SettingKey[Seq[String]]("options", "Options for dalvikvm")
   }
 
   import DalvikKeys._
@@ -60,11 +41,9 @@ object DalvikPlugin extends sbt.Plugin {
     ),
 
     options <<= (androidData) map {
-      (androidData: File) => {
-        val a = "-Duser.dir=/tmp/test/" :: "-Djava.io.tmpdir=/tmp/test/" :: "-Xbootclasspath::/var/android/bootjars/system/framework/framework.jar:/var/android/framework/core-hostdex.jar:/var/android/framework/bouncycastle-hostdex.jar:/var/android/framework/apache-xml-hostdex.jar" :: "-Duser.language=en" :: "-Duser.region=US" :: "-Xverify:none" :: "-Xdexopt:none" :: "-Xcheck:jni" :: "-Xjnigreflimit:2000" :: Nil
-        val d = a.toSeq
-        d
-      }
+      (androidData: File) =>
+        //"-Duser.dir=/tmp/test/" :: "-Djava.io.tmpdir=/tmp/test/" :: "-Xbootclasspath::/var/android/bootjars/system/framework/framework.jar:/var/android/framework/core-hostdex.jar:/var/android/framework/bouncycastle-hostdex.jar:/var/android/framework/apache-xml-hostdex.jar" :: "-Duser.language=en" :: "-Duser.region=US" :: "-Xverify:none" :: "-Xdexopt:none" :: "-Xcheck:jni" :: "-Xjnigreflimit:2000" :: Nil
+        Seq("hello", "hello")
     },
 
     dexDirectory <<= cacheDirectory(_ / "dex"),
