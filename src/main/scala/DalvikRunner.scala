@@ -3,6 +3,7 @@ package novoda.sbt
 import java.io.File
 import sbt._
 import sbt.Keys._
+import sbt.Build._
 
 object DalvikPlugin extends sbt.Plugin {
 
@@ -52,7 +53,8 @@ object DalvikPlugin extends sbt.Plugin {
       (dalvikvm: File, options: Seq[String]) =>
         new DalvikRunner(dalvikvm, options)
     },
-    run <<= runInputTask(Dalvik, "HelloWorld", ""),
+    //run <<= runTask(fullClasspath, mainClass in run, runner in run),
+    run <<= runInputTask2(Dalvik, "HelloWorld", ""),
     fullClasspath in (Dalvik) <<= (fullClasspath in Runtime, dexDirectory, streams) map {
       (cp: Classpath, cache: File, s: TaskStreams) => {
         cp.filterNot((b: Attributed[File]) => b.data.toString.contains("android"))
@@ -60,6 +62,15 @@ object DalvikPlugin extends sbt.Plugin {
       }
     }
   )
+
+  def runInputTask2(config: Configuration, mainClass: String, baseArguments: String*) =
+    inputTask {
+      result =>
+        (fullClasspath in config, runner in(config, run), streams, result) map {
+          (cp, r, s, args) =>
+            toError(r.run(mainClass, data(cp), baseArguments ++ args, s.log))
+        }
+    }
 
   def bootjars(base: File): PathFinder = (base / "out/target/product/generic_x86/dex_bootjars/system/framework/") ** "*.jar"
 
@@ -87,11 +98,14 @@ object DalvikPlugin extends sbt.Plugin {
     dexFiles(outputFolder)
   }
 
-  def split(jar: File, to: File)(logger: sbt.Logger): Seq[File] = {
-    new JarSplitter(jar, new File("/tmp/test"), 1024 * 10 * 10 * 10 * 3, true, 1, new java.util.HashSet[String](), logger).run
-    splitFiles(new File("/tmp/test"))
+  def createFileStructure(androidData: File) {
+    new File(androidData, "dalvik-cache").mkdirs()
   }
 
+  def split(jar: File, to: File)(logger: sbt.Logger): Seq[File] = {
+    new JarSplitter(jar, to, 1024 * 10 * 10 * 10 * 3, true, 1, new java.util.HashSet[String](), logger).run
+    splitFiles(to)
+  }
 
   def dexFiles(base: File): Classpath = {
     val finder: PathFinder = (base) ** "*.dex"
@@ -106,7 +120,7 @@ object DalvikPlugin extends sbt.Plugin {
 }
 
 
-class DalvikRunner(dalvikvm: File, options: Seq[String]) extends sbt.ScalaRun {
+class DalvikRunner(dalvikvm: File, options: Seq[String], extraEnv: (String, String)*) extends sbt.ScalaRun {
 
   override def run(mainClass: String, classpath: Seq[File], options: Seq[String], log: sbt.Logger) = {
     log.info("this" + options.mkString)
@@ -123,13 +137,7 @@ class DalvikRunner(dalvikvm: File, options: Seq[String]) extends sbt.ScalaRun {
         :: "-Xcheck:jni"
         :: "-Xjnigreflimit:2000"
         :: "HelloWorld" :: Nil
-      , Path.userHome,
-      "ANDROID_PRINTF_LOG" -> "tag",
-      "ANDROID_LOG_TAGS" -> "*:i",
-      "ANDROID_DATA" -> "/tmp/test/android-data",
-      "ANDROID_ROOT" -> "/var/android/linux-x86",
-      "LD_LIBRARY_PATH" -> "/var/android/lib",
-      "DYLD_LIBRARY_PATH" -> "/var/android/lib").!(log) match {
+      , Path.userHome, extraEnv).!(log) match {
       case 0 => None
       case _ => Some("failure to run")
     }
