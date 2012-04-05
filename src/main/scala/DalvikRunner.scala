@@ -7,6 +7,8 @@ import sbt.Build._
 
 object DalvikPlugin extends sbt.Plugin {
 
+  implicit def fileToString(f: File): String = f.getAbsolutePath
+
   val Dalvik = config("dalvik") extend (Runtime)
 
   object DalvikKeys {
@@ -28,8 +30,8 @@ object DalvikPlugin extends sbt.Plugin {
   def dalvikSettings: Seq[Setting[_]] = Seq(
     dalvikvm <<= androidSource(_ / "out/host/linux-x86/bin/dalvikvm"),
     bootclasspath <<= androidSource(bootjars(_).get),
-    androidRoot <<= androidSource(_ / "out/host/linux-x86/"),
-    lib <<= androidSource(_ / "out/host/linux-x86/lib"),
+    androidRoot <<= androidSource(_ / "out/target/product/generic_x86/"),
+    lib <<= androidSource(_ / "out/target/product/generic_x86/system/lib/"),
     dexDirectory <<= cacheDirectory(_ / "dex"),
     androidData <<= cacheDirectory(_ / "android-data"),
 
@@ -39,10 +41,10 @@ object DalvikPlugin extends sbt.Plugin {
         Seq(
           "ANDROID_PRINTF_LOG" -> "tag",
           "ANDROID_LOG_TAGS" -> "*:i",
-          "ANDROID_DATA" -> androidData.getAbsolutePath,
-          "ANDROID_ROOT" -> androidRoot.getAbsolutePath,
-          "LD_LIBRARY_PATH" -> lib.getAbsolutePath,
-          "DYLD_LIBRARY_PATH" -> lib.getAbsolutePath
+          "ANDROID_DATA" -> androidData,
+          "ANDROID_ROOT" -> androidRoot,
+          "LD_LIBRARY_PATH" -> lib,
+          "DYLD_LIBRARY_PATH" -> lib
         )
     },
 
@@ -78,7 +80,7 @@ object DalvikPlugin extends sbt.Plugin {
         }
     }
 
-  def bootjars(base: File): PathFinder = (base / "out/host/linux-x86/framework/") ** "*.jar"
+  def bootjars(base: File): PathFinder = (base / "out/target/product/generic_x86/system/framework/") ** "*.jar"
 
   type Folder = File;
 
