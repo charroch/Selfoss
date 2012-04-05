@@ -2,6 +2,6 @@ import novoda.sbt.DalvikPlugin.DalvikKeys._
 
 seq(novoda.sbt.DalvikPlugin.dalvikSettings: _*)
 
-androidSource := file("/var/android/")
+androidSource := file("/media/server/FOSS/android/head/")
 
-dalvikvm := file("/var/android/bin/dalvikvm")
+libraryDependencies += "com.google.android" % "android" % "4.0.1.2"
